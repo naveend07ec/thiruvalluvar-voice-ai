@@ -1,9 +1,19 @@
-﻿FROM oven/bun:1
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
 COPY . .
-RUN bun run build
-ENV PORT=3000
-EXPOSE 3000
-CMD ["bun", "run", "start"]
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=10000
+EXPOSE 10000
+
+COPY --from=builder /app/.output ./.output
+
+CMD ["node", ".output/server/index.mjs"]

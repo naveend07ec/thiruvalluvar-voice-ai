@@ -1,4 +1,31 @@
 import "./lib/error-capture";
+import fs from "node:fs";
+import path from "node:path";
+
+// Load .env file into process.env if present in Node environment
+try {
+  const envPath = path.resolve(process.cwd(), ".env");
+  if (fs.existsSync(envPath)) {
+    const envFile = fs.readFileSync(envPath, "utf-8");
+    for (const line of envFile.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const equalsIdx = trimmed.indexOf("=");
+      if (equalsIdx > 0) {
+        const key = trimmed.slice(0, equalsIdx).trim();
+        let val = trimmed.slice(equalsIdx + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        if (!process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    }
+  }
+} catch {
+  // Ignore if .env is missing or unreadable
+}
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
